@@ -11,7 +11,8 @@ public:
         BOARD_SIZE = 8
     };
 
-    enum Roles {
+    enum Roles
+    {
         Type = Qt::UserRole,
         PositionX,
         PositionY,
@@ -28,8 +29,8 @@ public:
     Q_INVOKABLE bool move(int fromX, int fromY, int toX, int toY);
 
 protected:
-    int rowCount(const QModelIndex & parent) const override;
-    QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const override;
+    int rowCount(const QModelIndex &parent) const override;
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     QHash<int, QByteArray> roleNames() const override;
 
 private:
