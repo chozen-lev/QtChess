@@ -1,10 +1,18 @@
 <RCC>
-    <qresource prefix="">
+    <qresource prefix="/">
         <file>qml/main.qml</file>
-    </qresource>
-    <qresource prefix="">
         <file>images/black_pawn.svg</file>
         <file>images/white_pawn.svg</file>
         <file>images/chess_board.jpg</file>
+        <file>images/black_bishop.svg</file>
+        <file>images/black_king.svg</file>
+        <file>images/black_knight.svg</file>
+        <file>images/black_queen.svg</file>
+        <file>images/black_rook.svg</file>
+        <file>images/white_bishop.svg</file>
+        <file>images/white_king.svg</file>
+        <file>images/white_knight.svg</file>
+        <file>images/white_queen.svg</file>
+        <file>images/white_rook.svg</file>
     </qresource>
 </RCC>

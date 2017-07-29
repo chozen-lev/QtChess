@@ -13,9 +13,26 @@ public:
 
     enum Roles
     {
-        Type = Qt::UserRole,
-        PositionX,
+        PositionX = Qt::UserRole,
         PositionY,
+        Type,
+        Color
+    };
+
+    enum Types
+    {
+        Pawn,
+        Knight,
+        Bishop,
+        Rook,
+        Queen,
+        King
+    };
+
+    enum Colors
+    {
+        Black,
+        White
     };
     
 public:

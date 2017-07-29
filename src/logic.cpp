@@ -6,9 +6,10 @@
 
 struct Figure
 {
-    int type;
     int x;
     int y;
+    int color;
+    int type;
 };
 
 
@@ -21,7 +22,7 @@ struct Logic::Impl
 
 int Logic::Impl::findByPosition(int x, int y)
 {
-    for (int i(0); i<figures.size(); ++i)
+    for (int i = 0; i < figures.size(); ++i)
     {
         if (figures[i].x != x || figures[i].y != y ) {
           continue;
@@ -31,11 +32,33 @@ int Logic::Impl::findByPosition(int x, int y)
     return -1;
 }
 
-
-Logic::Logic(QObject *parent) : QAbstractListModel(parent), impl(new Impl())
+Logic::Logic(QObject *parent): QAbstractListModel(parent), impl(new Impl())
 {
-    impl->figures << Figure { 0, 0, 0 };
-    impl->figures << Figure { 1, 7, 7 };
+    for (int i = 0; i < 2; ++i)
+    {
+        // pawns
+        for (int j = 0; j < 8; ++j) {
+            impl->figures << Figure { j, i * (BOARD_SIZE - 3) + 1, i, Pawn };
+        }
+
+        // kings
+        impl->figures << Figure { 4, i * (BOARD_SIZE - 1), i, King };
+
+        // queens
+        impl->figures << Figure { 3, i * (BOARD_SIZE - 1), i, Queen };
+
+        // bishops
+        impl->figures << Figure { 2, i * (BOARD_SIZE - 1), i, Bishop };
+        impl->figures << Figure { BOARD_SIZE - 3, i * (BOARD_SIZE - 1), i, Bishop };
+
+        // knigths
+        impl->figures << Figure { 1, i * (BOARD_SIZE - 1), i, Knight };
+        impl->figures << Figure { BOARD_SIZE - 2, i * (BOARD_SIZE - 1), i, Knight };
+
+        // rooks
+        impl->figures << Figure { 0, i * (BOARD_SIZE - 1), i, Rook };
+        impl->figures << Figure { BOARD_SIZE - 1, i * (BOARD_SIZE - 1), i, Rook };
+    }
 }
 
 Logic::~Logic()
@@ -56,9 +79,10 @@ int Logic::rowCount(const QModelIndex &) const
 QHash<int, QByteArray> Logic::roleNames() const
 {
     QHash<int, QByteArray> names;
-    names.insert(Roles::Type      , "type");
     names.insert(Roles::PositionX , "positionX");
     names.insert(Roles::PositionY , "positionY");
+    names.insert(Roles::Color     , "color");
+    names.insert(Roles::Type      , "type");
     return names;
 }
 
@@ -78,9 +102,10 @@ QVariant Logic::data(const QModelIndex &modelIndex, int role) const
 
     switch (role)
     {
-        case Roles::Type     : return figure.type;
         case Roles::PositionX: return figure.x;
         case Roles::PositionY: return figure.y;
+        case Roles::Color    : return figure.color;
+        case Roles::Type     : return figure.type;
     }
     return QVariant();
 }
@@ -96,15 +121,34 @@ bool Logic::move(int fromX, int fromY, int toX, int toY)
 {
     int index = impl->findByPosition(fromX, fromY);
 
-    if (index < 0) return false;
-
-    if (toX < 0 || toX >= BOARD_SIZE || toY < 0 || toY >= BOARD_SIZE || impl->findByPosition(toX, toY) >= 0) {
+    if (index < 0) {
         return false;
     }
+
+    if (toX < 0 || toX >= BOARD_SIZE || toY < 0 || toY >= BOARD_SIZE) {
+        return false;
+    }
+
+    int index2 = impl->findByPosition(toX, toY);
+
+    if (index2 >= 0)
+    {
+        if (impl->figures[index].color != impl->figures[index2].color)
+        {
+            beginResetModel();
+            impl->figures.removeAt(index2);
+            endResetModel();
+
+            if (index2 < index) {
+                index--;
+            }
+        }
+        else return false;
+    }
+
     impl->figures[index].x = toX;
     impl->figures[index].y = toY;
-    QModelIndex topLeft = createIndex(index, 0);
-    QModelIndex bottomRight = createIndex(index, 0);
-    emit dataChanged(topLeft, bottomRight);
+    emit layoutChanged();
+
     return true;
 }

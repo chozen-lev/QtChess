@@ -7,13 +7,27 @@ ApplicationWindow {
     title: qsTr("Chess")
     visible: true
     width: 800
-    height: 600
+    height: 560
     
     property int squareSize: 70
 
     property var images: [
-      {'imgPath' : "/images/white_pawn.svg"},
-      {'imgPath' : "/images/black_pawn.svg"},
+      [
+        {'imgPath' : "/images/black_pawn.svg"},
+        {'imgPath' : "/images/black_knight.svg"},
+        {'imgPath' : "/images/black_bishop.svg"},
+        {'imgPath' : "/images/black_rook.svg"},
+        {'imgPath' : "/images/black_queen.svg"},
+        {'imgPath' : "/images/black_king.svg"},
+      ],
+      [
+        {'imgPath' : "/images/white_pawn.svg"},
+        {'imgPath' : "/images/white_knight.svg"},
+        {'imgPath' : "/images/white_bishop.svg"},
+        {'imgPath' : "/images/white_rook.svg"},
+        {'imgPath' : "/images/white_queen.svg"},
+        {'imgPath' : "/images/white_king.svg"},
+      ]
     ]
 
     Item {
@@ -39,7 +53,7 @@ ApplicationWindow {
           x: squareSize * positionX
           y: squareSize * positionY
 
-          source: images[type].imgPath
+          source: images[color][type].imgPath
           
           MouseArea {
             anchors.fill: parent
@@ -75,8 +89,8 @@ ApplicationWindow {
       anchors.right: parent.right
       anchors.leftMargin: 10
       anchors.rightMargin: 10
-      
-      text: "Clear"
+
+      text: "New game"
 
       onClicked: {
         logic.clear();
