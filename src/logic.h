@@ -16,7 +16,8 @@ public:
         PositionX = Qt::UserRole,
         PositionY,
         Type,
-        Color
+        Color,
+        Moves
     };
 
     enum Types
@@ -42,8 +43,9 @@ public:
     Q_PROPERTY(int boardSize READ boardSize CONSTANT);
     int boardSize() const;
 
-    Q_INVOKABLE void clear();
+    Q_INVOKABLE void btnStart_Handler();
     Q_INVOKABLE bool move(int fromX, int fromY, int toX, int toY);
+    Q_INVOKABLE void btnStop_Handler();
 
 protected:
     int rowCount(const QModelIndex &parent) const override;
@@ -53,4 +55,6 @@ protected:
 private:
     struct Impl;
     std::unique_ptr<Impl> impl;
+
+    void initPieces();
 };

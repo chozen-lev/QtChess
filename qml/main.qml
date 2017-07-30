@@ -82,18 +82,95 @@ ApplicationWindow {
         }
       }
     }
-
-    Button {
-      id: startButton
+    ColumnLayout
+    {
+      id: column
+      anchors.top: gameBoard.top
       anchors.left: gameBoard.right
       anchors.right: parent.right
+      anchors.topMargin: 10
       anchors.leftMargin: 10
       anchors.rightMargin: 10
 
-      text: "New game"
+      Button {
+        id: startButton
+        anchors.left: parent.left
+        anchors.right: parent.right
 
-      onClicked: {
-        logic.clear();
+        text: "New game"
+
+        onClicked: {
+          logic.btnStart_Handler()
+        }
+      }
+
+      Button {
+        id: stopButton
+        anchors.left: parent.left
+        anchors.right: parent.right
+        text: "Stop"
+
+        onClicked: {
+          logic.btnStop_Handler()
+        }
+      }
+
+      Button {
+        id: loadButton
+        anchors.left: parent.left
+        anchors.right: parent.right
+        text: "Load"
+
+        onClicked: {
+
+        }
+      }
+
+      Button {
+        id: saveButton
+        anchors.left: parent.left
+        anchors.right: parent.right
+        text: "Save"
+
+        onClicked: {
+
+        }
+      }
+
+      RowLayout {
+        anchors.left: parent.left
+        anchors.right: parent.right
+
+        Button {
+          id: prevButton
+          anchors.left: parent.left
+          text: "Prev"
+
+          onClicked: {
+
+          }
+        }
+
+        Button {
+          id: nextButton
+          anchors.right: parent.right
+          text: "Next"
+
+          onClicked: {
+
+          }
+        }
+      }
+
+      Button {
+        id: exitButton
+        anchors.left: parent.left
+        anchors.right: parent.right
+        text: "Exit"
+
+        onClicked: {
+            Qt.quit()
+        }
       }
     }
 }
