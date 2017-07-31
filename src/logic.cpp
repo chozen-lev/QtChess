@@ -3,6 +3,7 @@
 #include <QByteArray>
 #include <QHash>
 #include <iostream>
+#include <QtDebug>
 
 struct Figure
 {
@@ -15,17 +16,20 @@ struct Figure
     void initPieces();
 };
 
-
 struct Logic::Impl
 {
+    QString const boardCoordX[BOARD_SIZE] = { "a", "b", "c", "d", "e", "f", "g", "h" };
+    QString const boardCoordY[BOARD_SIZE] = { "8", "7", "6", "5", "4", "3", "2", "1" };
+
     QList<Figure> figures;
+    QList<QString> movements;
 
     int findByPosition(int x, int y);
 };
 
 int Logic::Impl::findByPosition(int x, int y)
 {
-    for (int i(0); i < figures.size(); ++i)
+    for (int i = 0; i < figures.size(); ++i)
     {
         if (figures[i].x != x || figures[i].y != y ) {
             continue;
@@ -50,7 +54,7 @@ int Logic::boardSize() const
     return BOARD_SIZE;
 }
 
-int Logic::rowCount(const QModelIndex & ) const
+int Logic::rowCount(const QModelIndex &) const
 {
     return impl->figures.size();
 }
@@ -95,6 +99,7 @@ void Logic::clear()
 {
     beginResetModel();
     impl->figures.clear();
+    impl->movements.clear();
     endResetModel();
 }
 
@@ -163,9 +168,13 @@ bool Logic::move(int fromX, int fromY, int toX, int toY)
         else return false;
     }
 
+    QString movement = impl->boardCoordX[fromX] + impl->boardCoordY[fromY] + " " + impl->boardCoordX[toX] + impl->boardCoordY[toY];
+    impl->movements << movement;
+    qDebug().noquote() << movement;
+
     impl->figures[index].x = toX;
     impl->figures[index].y = toY;
-    impl->figures[index].moves++;
+    impl->figures[index].moves++;    
     emit layoutChanged();
 
     return true;
@@ -178,26 +187,26 @@ void Logic::initPieces()
     {
         // pawns
         for (int j = 0; j < 8; ++j) {
-            impl->figures << Figure { j, i * (BOARD_SIZE - 3) + 1, i, Pawn };
+            impl->figures << Figure { j, i * (BOARD_SIZE - 3) + 1, i, Pawn, 0 };
         }
 
         // kings
-        impl->figures << Figure { 4, i * (BOARD_SIZE - 1), i, King };
+        impl->figures << Figure { 4, i * (BOARD_SIZE - 1), i, King, 0 };
 
         // queens
-        impl->figures << Figure { 3, i * (BOARD_SIZE - 1), i, Queen };
+        impl->figures << Figure { 3, i * (BOARD_SIZE - 1), i, Queen, 0 };
 
         // bishops
-        impl->figures << Figure { 2, i * (BOARD_SIZE - 1), i, Bishop };
-        impl->figures << Figure { BOARD_SIZE - 3, i * (BOARD_SIZE - 1), i, Bishop };
+        impl->figures << Figure { 2, i * (BOARD_SIZE - 1), i, Bishop, 0 };
+        impl->figures << Figure { BOARD_SIZE - 3, i * (BOARD_SIZE - 1), i, Bishop, 0 };
 
         // knigths
-        impl->figures << Figure { 1, i * (BOARD_SIZE - 1), i, Knight };
-        impl->figures << Figure { BOARD_SIZE - 2, i * (BOARD_SIZE - 1), i, Knight };
+        impl->figures << Figure { 1, i * (BOARD_SIZE - 1), i, Knight, 0 };
+        impl->figures << Figure { BOARD_SIZE - 2, i * (BOARD_SIZE - 1), i, Knight, 0 };
 
         // rooks
-        impl->figures << Figure { 0, i * (BOARD_SIZE - 1), i, Rook };
-        impl->figures << Figure { BOARD_SIZE - 1, i * (BOARD_SIZE - 1), i, Rook };
+        impl->figures << Figure { 0, i * (BOARD_SIZE - 1), i, Rook, 0 };
+        impl->figures << Figure { BOARD_SIZE - 1, i * (BOARD_SIZE - 1), i, Rook, 0 };
     }
     endResetModel();
 }

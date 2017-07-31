@@ -58,6 +58,12 @@ ApplicationWindow {
                 MouseArea {
                     anchors.fill: parent
                     drag.target: parent
+                    drag.minimumX: 0
+                    drag.maximumX: 490
+                    drag.minimumY: 0
+                    drag.maximumY: 490
+
+                    enabled: true
 
                     property int startX: 0
                     property int startY: 0
@@ -120,7 +126,7 @@ ApplicationWindow {
                 text: "Load"
 
                 onClicked: {
-                    loadControllers.visible = true
+                    loadDialog.visible = true
                 }
             }
 
@@ -172,6 +178,18 @@ ApplicationWindow {
             visible: false
 
             Button {
+                id: saveButton
+                anchors.left: parent.left
+                anchors.right: parent.right
+
+                text: "Save"
+
+                onClicked: {
+                    saveDialog.visible = true
+                }
+            }
+
+            Button {
                 id: stopButton
                 anchors.left: parent.left
                 anchors.right: parent.right
@@ -184,18 +202,42 @@ ApplicationWindow {
                     logic.clear()
                 }
             }
+        }
+    }
 
-            Button {
-                id: saveButton
-                anchors.left: parent.left
-                anchors.right: parent.right
+    FileDialog {
+        id: loadDialog
+        title: "Please choose a file"
+        folder: shortcuts.documents
+        nameFilters: [ "Text files (*.txt)", "All files (*)" ]
+        onAccepted: {
+            console.log("You chose: " + loadDialog.fileUrls)
 
-                text: "Save"
+            loadControllers.visible = true
 
-                onClicked: {
+            logic.clear()
+            logic.initPieces()
+        }
+        onRejected: {
+            console.log("Canceled")
+        }
+    }
 
-                }
-            }
+    FileDialog {
+        id: saveDialog
+        title: "Save file"
+        folder: shortcuts.documents
+        selectExisting: false
+        onAccepted: {
+            console.log("You chose: " + saveDialog.fileUrls)
+
+            loadControllers.visible = true
+
+            logic.clear()
+            logic.initPieces()
+        }
+        onRejected: {
+            console.log("Canceled")
         }
     }
 }
