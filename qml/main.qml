@@ -8,7 +8,7 @@ ApplicationWindow {
     visible: true
     width: 800
     height: 560
-    
+
     property int squareSize: 70
 
     property var images: [
@@ -31,215 +31,206 @@ ApplicationWindow {
     ]
 
     Item {
-        id: gameBoard
-        x: 0
-        y: 0
-        width: logic.boardSize * squareSize
-        height: logic.boardSize * squareSize
+      id: gameBoard
+      x: 0
+      y: 0
+      width : logic.boardSize * squareSize
+      height: logic.boardSize * squareSize
+
+      Image {
+        source: "/images/chess_board.jpg"
+        height: gameBoard.height
+        width: gameBoard.width
+      }
+
+      Repeater {
+        model: logic
 
         Image {
-            source: "/images/chess_board.jpg"
-            height: gameBoard.height
-            width: gameBoard.width
-        }
+          height: squareSize
+          width : squareSize
 
-        Repeater {
-            model: logic
+          x: squareSize * positionX
+          y: squareSize * positionY
 
-            Image {
-                height: squareSize
-                width: squareSize
+          source: images[color][type].imgPath
 
-                x: squareSize * positionX
-                y: squareSize * positionY
+          MouseArea {
+            anchors.fill: parent
+            drag.target: parent
+            drag.minimumX: 0
+            drag.minimumY: 0
+            drag.maximumX: (logic.boardSize - 1) * squareSize
+            drag.maximumY: (logic.boardSize - 1) * squareSize
 
-                source: images[color][type].imgPath
+            // The use of "color" triggers a lot of signals. There must be better way=\
+            enabled: ingameMenu.visible ? (logic.getColor === color ? false : true) : false
 
-                MouseArea {
-                    anchors.fill: parent
-                    drag.target: parent
-                    drag.minimumX: 0
-                    drag.maximumX: 490
-                    drag.minimumY: 0
-                    drag.maximumY: 490
+            property int startX: 0
+            property int startY: 0
 
-                    enabled: true
-
-                    property int startX: 0
-                    property int startY: 0
-
-                    onPressed: {
-                        startX = parent.x;
-                        startY = parent.y;
-                        console.log(moves)
-                    }
-
-                    onReleased: {
-                        var fromX = startX / squareSize;
-                        var fromY = startY / squareSize;
-                        var toX   = (parent.x + mouseX) / squareSize;
-                        var toY   = (parent.y + mouseY) / squareSize;
-
-                        if (!logic.move(fromX, fromY, toX, toY)) {
-                            parent.x = startX;
-                            parent.y = startY;
-                        }
-                    }
-                }
+            onPressed: {
+              startX = parent.x;
+              startY = parent.y;
             }
+
+            onReleased: {
+              var fromX = startX / squareSize;
+              var fromY = startY / squareSize;
+              var toX   = (parent.x + mouseX) / squareSize;
+              var toY   = (parent.y + mouseY) / squareSize;
+
+              if (!logic.move(fromX, fromY, toX, toY)) {
+                positionX = fromX;
+                positionY = fromY;
+              }
+            }
+          }
         }
+      }
     }
 
     ColumnLayout
     {
-        anchors.top: gameBoard.top
-        anchors.bottom: gameBoard.bottom
-        anchors.left: gameBoard.right
+      anchors.top: gameBoard.top
+      anchors.bottom: gameBoard.bottom
+      anchors.left: gameBoard.right
+      anchors.right: parent.right
+      anchors.margins: 10
+
+      ColumnLayout {
+        id: mainMenu
+        anchors.fill: parent
+
+        Button {
+          id: startButton
+          anchors.left: parent.left
+          anchors.right: parent.right
+
+          text: "New game"
+
+          onClicked: {
+            mainMenu.visible = false;
+            loadControllers.visible = false;
+            ingameMenu.visible = true;
+
+            logic.clear();
+            logic.init();
+          }
+        }
+
+        Button {
+          id: loadButton
+          anchors.left: parent.left
+          anchors.right: parent.right
+
+          text: "Load"
+
+          onClicked: {
+            loadDialog.open();
+          }
+        }
+
+        Button {
+          id: exitButton
+          anchors.left: parent.left
+          anchors.right: parent.right
+
+          text: "Exit"
+
+          onClicked: {
+            Qt.quit();
+          }
+        }
+      }
+
+      RowLayout {
+        id: loadControllers
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
         anchors.right: parent.right
-        anchors.margins: 10
+        visible: false
 
-        ColumnLayout {
-            id: mainMenu
-            anchors.fill: parent
+        Button {
+          id: prevButton
+          anchors.left: parent.left
+          text: "Prev"
+          enabled: logic.getLastMove > 0
 
-            Button {
-                id: startButton
-                anchors.left: parent.left
-                anchors.right: parent.right
-
-                text: "New game"
-
-                onClicked: {
-                    mainMenu.visible = false
-                    loadControllers.visible = false
-                    ingameMenu.visible = true
-
-                    logic.clear()
-                    logic.init()
-                }
-            }
-
-            Button {
-                id: loadButton
-                anchors.left: parent.left
-                anchors.right: parent.right
-
-                text: "Load"
-
-                onClicked: {
-                    loadDialog.visible = true
-                }
-            }
-
-            Button {
-                id: exitButton
-                anchors.left: parent.left
-                anchors.right: parent.right
-
-                text: "Exit"
-
-                onClicked: {
-                    Qt.quit()
-                }
-            }
+          onClicked: {
+            logic.move(true);
+            console.log(logic.getLastMove, logic.getMovesNum)
+          }
         }
 
-        RowLayout {
-            id: loadControllers
-            anchors.bottom: parent.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
-            visible: false
+        Button {
+          id: nextButton
+          anchors.right: parent.right
+          text: "Next"
+          enabled: logic.getLastMove < logic.getMovesNum
 
-            Button {
-                id: prevButton
-                anchors.left: parent.left
-                text: "Prev"
-                enabled: false
+          onClicked: {
+            logic.move(false);
+            console.log(logic.getLastMove, logic.getMovesNum)
+          }
+        }
+      }
 
-                onClicked: {
+      ColumnLayout
+      {
+        id: ingameMenu
+        anchors.fill: parent
+        visible: false
 
-                }
-            }
+        Button {
+          id: saveButton
+          anchors.left: parent.left
+          anchors.right: parent.right
 
-            Button {
-                id: nextButton
-                anchors.right: parent.right
-                text: "Next"
-                enabled: false
+          text: "Save"
 
-                onClicked: {
-
-                }
-            }
+          onClicked: {
+            saveDialog.open();
+          }
         }
 
-        ColumnLayout
-        {
-            id: ingameMenu
-            anchors.fill: parent
-            visible: false
+        Button {
+          id: stopButton
+          anchors.left: parent.left
+          anchors.right: parent.right
 
-            Button {
-                id: saveButton
-                anchors.left: parent.left
-                anchors.right: parent.right
+          text: "Stop"
 
-                text: "Save"
-
-                onClicked: {
-                    saveDialog.visible = true
-                }
-            }
-
-            Button {
-                id: stopButton
-                anchors.left: parent.left
-                anchors.right: parent.right
-
-                text: "Stop"
-
-                onClicked: {
-                    ingameMenu.visible = false
-                    mainMenu.visible = true
-                    logic.clear()
-                }
-            }
+          onClicked: {
+            ingameMenu.visible = false;
+            mainMenu.visible = true;
+            logic.clear();
+          }
         }
+      }
     }
 
     FileDialog {
-        id: loadDialog
-        title: "Please choose a file"
-        folder: shortcuts.documents
-        nameFilters: [ "Text files (*.txt)", "All files (*)" ]
+      id: loadDialog
+      title: "Please choose a file"
+      folder: shortcuts.documents
+      nameFilters: [ "Text files (*.txt)", "All files (*)" ]
 
-        onAccepted: {
-            if (logic.load(loadDialog.fileUrls[0])) {
-                loadControllers.visible = true
-
-                logic.clear()
-                logic.init()
-            }
+      onAccepted: {
+        if (logic.load(loadDialog.fileUrls[0])) {
+          loadControllers.visible = true;
         }
-
-        onRejected: {
-            console.log("Canceled")
-        }
+      }
     }
 
     FileDialog {
-        id: saveDialog
-        title: "Save file"
-        folder: shortcuts.documents
-        selectExisting: false
+      id: saveDialog
+      title: "Save file"
+      folder: shortcuts.documents
+      selectExisting: false
 
-        onAccepted: {
-            logic.save(saveDialog.fileUrl)
-        }
-
-        onRejected: {
-            console.log("Canceled")
-        }
+      onAccepted: {
+        logic.save(saveDialog.fileUrl);
+      }
     }
 }
