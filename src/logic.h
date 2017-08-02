@@ -16,8 +16,7 @@ public:
         PositionX = Qt::UserRole,
         PositionY,
         Type,
-        Color,
-        Moves
+        Color
     };
 
     enum Types
@@ -45,7 +44,11 @@ public:
 
     Q_INVOKABLE void clear();
     Q_INVOKABLE bool move(int fromX, int fromY, int toX, int toY);
-    Q_INVOKABLE void initPieces();
+    Q_INVOKABLE bool moveNext();
+    Q_INVOKABLE bool movePrev();
+    Q_INVOKABLE void init();
+    Q_INVOKABLE bool load(QString);
+    Q_INVOKABLE bool save(QString);
 
 protected:
     int rowCount(const QModelIndex &parent) const override;

@@ -3,6 +3,8 @@
 #include <QByteArray>
 #include <QHash>
 #include <iostream>
+#include <QFile>
+#include <QUrl>
 #include <QtDebug>
 
 struct Figure
@@ -12,19 +14,19 @@ struct Figure
     int color;
     int type;
     int moves;
-
-    void initPieces();
 };
 
 struct Logic::Impl
 {
-    QString const boardCoordX[BOARD_SIZE] = { "a", "b", "c", "d", "e", "f", "g", "h" };
-    QString const boardCoordY[BOARD_SIZE] = { "8", "7", "6", "5", "4", "3", "2", "1" };
+    QList<QString> const boardCoordX = { "a", "b", "c", "d", "e", "f", "g", "h" };
+    QList<QString> const boardCoordY = { "8", "7", "6", "5", "4", "3", "2", "1" };
 
     QList<Figure> figures;
     QList<QString> movements;
 
     int findByPosition(int x, int y);
+    void initPieces();
+    bool move(QString);
 };
 
 int Logic::Impl::findByPosition(int x, int y)
@@ -37,6 +39,79 @@ int Logic::Impl::findByPosition(int x, int y)
         return i;
     }
     return -1;
+}
+
+void Logic::Impl::initPieces()
+{
+    for (int i = 0; i < 2; ++i)
+    {
+        // pawns
+        for (int j = 0; j < 8; ++j) {
+            figures << Figure { j, i * (BOARD_SIZE - 3) + 1, i, Pawn, 0 };
+        }
+
+        // kings
+        figures << Figure { 4, i * (BOARD_SIZE - 1), i, King, 0 };
+
+        // queens
+        figures << Figure { 3, i * (BOARD_SIZE - 1), i, Queen, 0 };
+
+        // bishops
+        figures << Figure { 2, i * (BOARD_SIZE - 1), i, Bishop, 0 };
+        figures << Figure { BOARD_SIZE - 3, i * (BOARD_SIZE - 1), i, Bishop, 0 };
+
+        // knigths
+        figures << Figure { 1, i * (BOARD_SIZE - 1), i, Knight, 0 };
+        figures << Figure { BOARD_SIZE - 2, i * (BOARD_SIZE - 1), i, Knight, 0 };
+
+        // rooks
+        figures << Figure { 0, i * (BOARD_SIZE - 1), i, Rook, 0 };
+        figures << Figure { BOARD_SIZE - 1, i * (BOARD_SIZE - 1), i, Rook, 0 };
+    }
+}
+
+bool Logic::Impl::move(QString movement)
+{
+    if (movement.length() < 5) {
+        return false;
+    }
+
+    int fromX = boardCoordX.indexOf(QString(movement[0])),
+        fromY = boardCoordY.indexOf(QString(movement[1])),
+        toX = boardCoordX.indexOf(QString(movement[3])),
+        toY = boardCoordY.indexOf(QString(movement[4]));
+
+    if (fromX < 0 || fromY < 0 || movement[2] != ' ' || toX < 0 || toY < 0) {
+        return false;
+    }
+
+    int index = findByPosition(fromX, fromY);
+
+    if (index < 0) {
+        return false;
+    }
+
+    int index2 = findByPosition(toX, toY);
+
+    if (index2 >= 0)
+    {
+        if (index == index2) {
+            return false;
+        }
+
+        figures.removeAt(index2);
+
+        if (index2 < index) {
+            index--;
+        }
+    }
+
+    qDebug() << movement << "|" << fromX << fromY << "-" << toX << toY;
+
+    figures[index].x = toX;
+    figures[index].y = toY;
+
+    return true;
 }
 
 Logic::Logic(QObject *parent): QAbstractListModel(parent), impl(new Impl())
@@ -66,7 +141,6 @@ QHash<int, QByteArray> Logic::roleNames() const
     names.insert(Roles::PositionY , "positionY");
     names.insert(Roles::Color     , "color");
     names.insert(Roles::Type      , "type");
-    names.insert(Roles::Moves     , "moves");
     return names;
 }
 
@@ -90,7 +164,6 @@ QVariant Logic::data(const QModelIndex &modelIndex, int role) const
         case Roles::PositionY: return figure.y;
         case Roles::Color    : return figure.color;
         case Roles::Type     : return figure.type;
-        case Roles::Moves    : return figure.moves;
     }
     return QVariant();
 }
@@ -180,33 +253,78 @@ bool Logic::move(int fromX, int fromY, int toX, int toY)
     return true;
 }
 
-void Logic::initPieces()
+bool Logic::moveNext()
+{
+
+    return true;
+}
+
+bool Logic::movePrev()
+{
+
+    return true;
+}
+
+void Logic::init()
 {
     beginResetModel();
-    for (int i = 0; i < 2; ++i)
+    impl->initPieces();
+    endResetModel();
+}
+
+bool Logic::load(QString path)
+{
+    path = QUrl(path).toLocalFile();
+
+    QFile file(path);
+
+    if (!file.open(QIODevice::ReadOnly)) {
+        return false;
+    }
+
+    QTextStream stream(&file);
+
+    impl->figures.clear();
+    impl->movements.clear();
+    impl->initPieces();
+
+    while (!stream.atEnd())
     {
-        // pawns
-        for (int j = 0; j < 8; ++j) {
-            impl->figures << Figure { j, i * (BOARD_SIZE - 3) + 1, i, Pawn, 0 };
+        QString movement = stream.readLine();
+
+        if (!impl->move(movement))
+        {
+            file.close();
+            return false;
         }
 
-        // kings
-        impl->figures << Figure { 4, i * (BOARD_SIZE - 1), i, King, 0 };
+        impl->movements << movement;
 
-        // queens
-        impl->figures << Figure { 3, i * (BOARD_SIZE - 1), i, Queen, 0 };
-
-        // bishops
-        impl->figures << Figure { 2, i * (BOARD_SIZE - 1), i, Bishop, 0 };
-        impl->figures << Figure { BOARD_SIZE - 3, i * (BOARD_SIZE - 1), i, Bishop, 0 };
-
-        // knigths
-        impl->figures << Figure { 1, i * (BOARD_SIZE - 1), i, Knight, 0 };
-        impl->figures << Figure { BOARD_SIZE - 2, i * (BOARD_SIZE - 1), i, Knight, 0 };
-
-        // rooks
-        impl->figures << Figure { 0, i * (BOARD_SIZE - 1), i, Rook, 0 };
-        impl->figures << Figure { BOARD_SIZE - 1, i * (BOARD_SIZE - 1), i, Rook, 0 };
+        emit layoutChanged();
     }
-    endResetModel();
+
+    file.close();
+
+    return true;
+}
+
+bool Logic::save(QString path)
+{
+    path = QUrl(path).toLocalFile();
+
+    QFile file(path);
+
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        return false;
+    }
+
+    QTextStream stream(&file);
+
+    for (int i = 0; i < impl->movements.size(); ++i) {
+        stream << impl->movements.at(i) << "\n";
+    }
+
+    file.close();
+
+    return true;
 }

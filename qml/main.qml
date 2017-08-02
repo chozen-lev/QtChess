@@ -12,23 +12,23 @@ ApplicationWindow {
     property int squareSize: 70
 
     property var images: [
-          [
-            {'imgPath' : "/images/black_pawn.svg"},
-            {'imgPath' : "/images/black_knight.svg"},
-            {'imgPath' : "/images/black_bishop.svg"},
-            {'imgPath' : "/images/black_rook.svg"},
-            {'imgPath' : "/images/black_queen.svg"},
-            {'imgPath' : "/images/black_king.svg"},
-          ],
-          [
-            {'imgPath' : "/images/white_pawn.svg"},
-            {'imgPath' : "/images/white_knight.svg"},
-            {'imgPath' : "/images/white_bishop.svg"},
-            {'imgPath' : "/images/white_rook.svg"},
-            {'imgPath' : "/images/white_queen.svg"},
-            {'imgPath' : "/images/white_king.svg"},
-          ]
-        ]
+      [
+        {'imgPath' : "/images/black_pawn.svg"},
+        {'imgPath' : "/images/black_knight.svg"},
+        {'imgPath' : "/images/black_bishop.svg"},
+        {'imgPath' : "/images/black_rook.svg"},
+        {'imgPath' : "/images/black_queen.svg"},
+        {'imgPath' : "/images/black_king.svg"},
+      ],
+      [
+        {'imgPath' : "/images/white_pawn.svg"},
+        {'imgPath' : "/images/white_knight.svg"},
+        {'imgPath' : "/images/white_bishop.svg"},
+        {'imgPath' : "/images/white_rook.svg"},
+        {'imgPath' : "/images/white_queen.svg"},
+        {'imgPath' : "/images/white_king.svg"},
+      ]
+    ]
 
     Item {
         id: gameBoard
@@ -71,6 +71,7 @@ ApplicationWindow {
                     onPressed: {
                         startX = parent.x;
                         startY = parent.y;
+                        console.log(moves)
                     }
 
                     onReleased: {
@@ -114,7 +115,7 @@ ApplicationWindow {
                     ingameMenu.visible = true
 
                     logic.clear()
-                    logic.initPieces()
+                    logic.init()
                 }
             }
 
@@ -131,7 +132,7 @@ ApplicationWindow {
             }
 
             Button {
-                id: startButton1
+                id: exitButton
                 anchors.left: parent.left
                 anchors.right: parent.right
 
@@ -154,6 +155,7 @@ ApplicationWindow {
                 id: prevButton
                 anchors.left: parent.left
                 text: "Prev"
+                enabled: false
 
                 onClicked: {
 
@@ -164,6 +166,7 @@ ApplicationWindow {
                 id: nextButton
                 anchors.right: parent.right
                 text: "Next"
+                enabled: false
 
                 onClicked: {
 
@@ -210,14 +213,16 @@ ApplicationWindow {
         title: "Please choose a file"
         folder: shortcuts.documents
         nameFilters: [ "Text files (*.txt)", "All files (*)" ]
+
         onAccepted: {
-            console.log("You chose: " + loadDialog.fileUrls)
+            if (logic.load(loadDialog.fileUrls[0])) {
+                loadControllers.visible = true
 
-            loadControllers.visible = true
-
-            logic.clear()
-            logic.initPieces()
+                logic.clear()
+                logic.init()
+            }
         }
+
         onRejected: {
             console.log("Canceled")
         }
@@ -228,14 +233,11 @@ ApplicationWindow {
         title: "Save file"
         folder: shortcuts.documents
         selectExisting: false
+
         onAccepted: {
-            console.log("You chose: " + saveDialog.fileUrls)
-
-            loadControllers.visible = true
-
-            logic.clear()
-            logic.initPieces()
+            logic.save(saveDialog.fileUrl)
         }
+
         onRejected: {
             console.log("Canceled")
         }
