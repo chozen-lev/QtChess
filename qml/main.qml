@@ -171,7 +171,6 @@ ApplicationWindow {
 
           onClicked: {
             logic.move(false);
-            console.log(logic.getLastMove, logic.getMovesNum)
           }
         }
       }

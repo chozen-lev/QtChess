@@ -398,8 +398,58 @@ int Logic::getMovesNum() const
 
 bool Logic::move(bool backward)
 {
-    lastMove += backward ? -1 : 1;
+    if (backward) {
+        lastMove--;
+    }
+
+    int fromX = impl->boardCoordX.indexOf(QString(impl->movements[lastMove][0])),
+        fromY = impl->boardCoordY.indexOf(QString(impl->movements[lastMove][1])),
+        toX = impl->boardCoordX.indexOf(QString(impl->movements[lastMove][3])),
+        toY = impl->boardCoordY.indexOf(QString(impl->movements[lastMove][4]));
+
+    int index;
+
+    if (backward)
+    {
+        index = impl->findByPosition(toX, toY);
+        impl->figures[index].x = fromX;
+        impl->figures[index].y = fromY;
+
+        if (impl->removes.contains(lastMove))
+        {
+            beginInsertRows(QModelIndex(), rowCount(QModelIndex()), rowCount(QModelIndex()));
+            impl->figures << Figure { toX, toY, lastMove % 2, impl->removes[lastMove], 0};
+            endInsertRows();
+        }
+    }
+    else
+    {
+        index = impl->findByPosition(fromX, fromY);
+
+        int index2 = impl->findByPosition(toX, toY);
+
+        if (index2 >= 0)
+        {
+            beginRemoveRows(QModelIndex(), index2, index2);
+            impl->figures.removeAt(index2);
+            endRemoveRows();
+
+            if (index2 < index) {
+                index--;
+            }
+        }
+
+        impl->figures[index].x = toX;
+        impl->figures[index].y = toY;
+
+        lastMove++;
+    }
+
+    QModelIndex topLeft = createIndex(index, 0);
+    QModelIndex bottomRight = createIndex(index, 0);
+    emit dataChanged(topLeft, bottomRight, { PositionX, PositionY });
     emit moveChanged();
+    emit colorChanged();
 
     return true;
 }
