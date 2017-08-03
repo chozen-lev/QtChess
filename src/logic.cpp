@@ -211,16 +211,40 @@ bool Logic::move(int fromX, int fromY, int toX, int toY)
 
     switch (impl->figures[index].type)
     {
-        case Pawn:
+        case Pawn: // finished
         {
             if (index2 >= 0 && impl->figures[index].color == impl->figures[index2].color) {
                 return false;
             }
+            if (((toY - fromY < 0) == (impl->figures[index].color <= 0))) {
+                return false;
+            }
+            if (abs(fromX - toX) > 1) {
+                return false;
+            }
+            if (abs(fromY - toY) > 2 || (impl->figures[index].movesNum > 0 && abs(fromY - toY) == 2)) {
+                return false;
+            }
+            if (abs(fromY - toY) == 2 && impl->findByPosition(fromX, (fromY + toY) / 2) >= 0) {
+                return false;
+            }
+            if (index2 == -1 && abs(fromX - toX)) {
+                return false;
+            }
+            if (abs(fromY - toY) == 2 && abs(fromX - toX)) {
+                return false;
+            }
+            if (index2 >= 0 && fromX - toX == 0) {
+                return false;
+            }
             break;
         }
-        case Knight:
+        case Knight: // finished
         {
             if (index2 >= 0 && impl->figures[index].color == impl->figures[index2].color) {
+                return false;
+            }
+            if ((abs(fromY - toY) != 2 || abs(fromX - toX) != 1) && (abs(fromX - toX) != 2 || abs(fromY - toY) != 1)) {
                 return false;
             }
             break;
@@ -230,6 +254,10 @@ bool Logic::move(int fromX, int fromY, int toX, int toY)
             if (index2 >= 0 && impl->figures[index].color == impl->figures[index2].color) {
                 return false;
             }
+            if(abs(fromX - toX) != abs(fromY - toY)) {
+                return false;
+            }
+            // проверка на препятствие
             break;
         }
         case Rook:
@@ -237,6 +265,10 @@ bool Logic::move(int fromX, int fromY, int toX, int toY)
             if (index2 >= 0 && impl->figures[index].color == impl->figures[index2].color) {
                 return false;
             }
+            if ((abs(fromX - toX) > 0) == (abs(fromY - toY) > 0)) {
+                return false;
+            }
+            // проверка на препятствие
             break;
         }
         case Queen:
@@ -244,11 +276,21 @@ bool Logic::move(int fromX, int fromY, int toX, int toY)
             if (index2 >= 0 && impl->figures[index].color == impl->figures[index2].color) {
                 return false;
             }
+            if(abs(fromX - toX) == abs(fromY - toY)) {
+                // проверка на препятствие по диагонали
+            }
+            else if ((abs(fromX - toX) > 0) != (abs(fromY - toY) > 0)) {
+                // проверка на препятствие на параллели
+            }
+            else return false;
             break;
         }
-        case King:
+        case King: // finished
         {
             if (index2 >= 0 && impl->figures[index].color == impl->figures[index2].color) {
+                return false;
+            }
+            if (abs(fromY - toY) > 1 || abs(fromX - toX) > 1) {
                 return false;
             }
             break;
