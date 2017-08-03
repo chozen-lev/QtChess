@@ -8,6 +8,8 @@ ApplicationWindow {
     visible: true
     width: 800
     height: 560
+    minimumWidth: 750
+    minimumHeight: 560
 
     property int squareSize: 70
 
@@ -159,7 +161,6 @@ ApplicationWindow {
 
           onClicked: {
             logic.move(true);
-            console.log(logic.getLastMove, logic.getMovesNum)
           }
         }
 

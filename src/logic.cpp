@@ -7,7 +7,7 @@
 #include <QUrl>
 #include <QTextStream>
 
-#include <QDebug>
+//#include <QDebug>
 
 struct Figure
 {
@@ -159,7 +159,7 @@ QVariant Logic::data(const QModelIndex &modelIndex, int role) const
         return QVariant();
     }
 
-    qDebug() << QString("Get Data - Row: %1, Col: %2, Role: %3").arg(modelIndex.row()).arg(modelIndex.column()).arg(role);
+//    qDebug() << QString("Get Data - Row: %1, Col: %2, Role: %3").arg(modelIndex.row()).arg(modelIndex.column()).arg(role);
 
     Figure &figure = impl->figures[index];
 
@@ -200,8 +200,6 @@ bool Logic::move(int fromX, int fromY, int toX, int toY)
     if (index < 0) {
         return false;
     }
-
-    qDebug() << getColor();
 
     if (toX < 0 || toX >= BOARD_SIZE || toY < 0 || toY >= BOARD_SIZE) {
         return false;
@@ -249,7 +247,7 @@ bool Logic::move(int fromX, int fromY, int toX, int toY)
             }
             break;
         }
-        case Bishop:
+        case Bishop: // finished
         {
             if (index2 >= 0 && impl->figures[index].color == impl->figures[index2].color) {
                 return false;
@@ -257,7 +255,12 @@ bool Logic::move(int fromX, int fromY, int toX, int toY)
             if(abs(fromX - toX) != abs(fromY - toY)) {
                 return false;
             }
-            // проверка на препятствие
+            for (int i = 1; i < abs(fromX - toX); ++i)
+            {
+                if (impl->findByPosition(fromX + (fromX < toX ? i : -i), fromY + (fromY < toY ? i : -i)) >= 0) {
+                    return false;
+                }
+            }
             break;
         }
         case Rook:
@@ -268,19 +271,48 @@ bool Logic::move(int fromX, int fromY, int toX, int toY)
             if ((abs(fromX - toX) > 0) == (abs(fromY - toY) > 0)) {
                 return false;
             }
-            // проверка на препятствие
+            for (int i = fromX; i != toX; (fromX - toX) > 0 ? i-- : i++)
+            {
+                if (impl->findByPosition(i, fromY) >= 0 && i != fromX) {
+                    return false;
+                }
+            }
+            for (int i = fromY; i != toY; (fromY - toY) > 0 ? i-- : i++)
+            {
+                if (impl->findByPosition(fromX, i) >= 0 && i != fromY) {
+                    return false;
+                }
+            }
             break;
         }
-        case Queen:
+        case Queen: // finished
         {
             if (index2 >= 0 && impl->figures[index].color == impl->figures[index2].color) {
                 return false;
             }
-            if(abs(fromX - toX) == abs(fromY - toY)) {
-                // проверка на препятствие по диагонали
+            if(abs(fromX - toX) == abs(fromY - toY))
+            {
+                for (int i = 1; i < abs(fromX - toX); ++i)
+                {
+                    if (impl->findByPosition(fromX + (fromX < toX ? i : -i), fromY + (fromY < toY ? i : -i)) >= 0) {
+                        return false;
+                    }
+                }
             }
-            else if ((abs(fromX - toX) > 0) != (abs(fromY - toY) > 0)) {
-                // проверка на препятствие на параллели
+            else if ((abs(fromX - toX) > 0) != (abs(fromY - toY) > 0))
+            {
+                for (int i = fromX; i != toX; (fromX - toX) > 0 ? i-- : i++)
+                {
+                    if (impl->findByPosition(i, fromY) >= 0 && i != fromX) {
+                        return false;
+                    }
+                }
+                for (int i = fromY; i != toY; (fromY - toY) > 0 ? i-- : i++)
+                {
+                    if (impl->findByPosition(fromX, i) >= 0 && i != fromY) {
+                        return false;
+                    }
+                }
             }
             else return false;
             break;
