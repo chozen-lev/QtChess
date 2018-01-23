@@ -8,12 +8,26 @@ ApplicationWindow {
     visible: true
     width: 800
     height: 600
-    
+
     property int squareSize: 70
 
     property var images: [
-      {'imgPath' : "/images/white_pawn.svg"},
-      {'imgPath' : "/images/black_pawn.svg"},
+      [
+        {'imgPath' : "/images/white_pawn.svg"},
+        {'imgPath' : "/images/white_knight.svg"},
+        {'imgPath' : "/images/white_bishop.svg"},
+        {'imgPath' : "/images/white_rook.svg"},
+        {'imgPath' : "/images/white_queen.svg"},
+        {'imgPath' : "/images/white_king.svg"},
+      ],
+      [
+        {'imgPath' : "/images/black_pawn.svg"},
+        {'imgPath' : "/images/black_knight.svg"},
+        {'imgPath' : "/images/black_bishop.svg"},
+        {'imgPath' : "/images/black_rook.svg"},
+        {'imgPath' : "/images/black_queen.svg"},
+        {'imgPath' : "/images/black_king.svg"},
+      ]
     ]
 
     Item {
@@ -22,13 +36,13 @@ ApplicationWindow {
       y: 0
       width : logic.boardSize * squareSize
       height: logic.boardSize * squareSize
-      
+
       Image {
         source: "/images/chess_board.jpg"
         height: gameBoard.height
         width: gameBoard.width
       }
-      
+
       Repeater {
         model: logic
 
@@ -39,11 +53,15 @@ ApplicationWindow {
           x: squareSize * positionX
           y: squareSize * positionY
 
-          source: images[type].imgPath
-          
+          source: images[team][type].imgPath
+
           MouseArea {
             anchors.fill: parent
             drag.target: parent
+            drag.minimumX: 0
+            drag.minimumY: 0
+            drag.maximumX: gameBoard.width - squareSize
+            drag.maximumY: gameBoard.height - squareSize
 
             property int startX: 0
             property int startY: 0
@@ -60,8 +78,8 @@ ApplicationWindow {
               var toY   = (parent.y + mouseY) / squareSize;
 
               if (!logic.move(fromX, fromY, toX, toY)) {
-                parent.x = startX;
-                parent.y = startY;
+                positionX = fromX;
+                positionY = fromY;
               }
             }
           }
@@ -75,7 +93,7 @@ ApplicationWindow {
       anchors.right: parent.right
       anchors.leftMargin: 10
       anchors.rightMargin: 10
-      
+
       text: "Clear"
 
       onClicked: {
