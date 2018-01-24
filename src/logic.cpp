@@ -28,8 +28,16 @@ void Logic::Impl::initPieces()
     for (int team = 0; team < 2; team++)
     {
         for (int x = 0; x < 8; x++) {
-            figures << Figure { Pawn, team, x, (1 - team) * (BOARD_SIZE - 3) + 1, 0 };
+            figures << Figure { Pawn, team, x, (1 - team) * 5 + 1, 0 };
         }
+        figures << Figure { King, team, 4, (1 - team) * 7, 0 };
+        figures << Figure { Queen, team, 3, (1 - team) * 7, 0 };
+        figures << Figure { Bishop, team, 2, (1 - team) * 7, 0 };
+        figures << Figure { Bishop, team, 5, (1 - team) * 7, 0 };
+        figures << Figure { Knight, team, 1, (1 - team) * 7, 0 };
+        figures << Figure { Knight, team, 6, (1 - team) * 7, 0 };
+        figures << Figure { Rook, team, 0, (1 - team) * 7, 0 };
+        figures << Figure { Rook, team, 7, (1 - team) * 7, 0 };
     }
 }
 
@@ -45,7 +53,7 @@ int Logic::Impl::findByPosition(int x, int y) {
 
 Logic::Logic(QObject *parent) : QAbstractListModel(parent), impl(new Impl())
 {
-    start();
+
 }
 
 Logic::~Logic() {
@@ -97,8 +105,7 @@ QVariant Logic::data(const QModelIndex &modelIndex, int role) const {
     return QVariant();
 }
 
-bool Logic::setData(const QModelIndex &modelIndex, const QVariant &value, int role)
-{
+bool Logic::setData(const QModelIndex &modelIndex, const QVariant &value, int role) {
     if (!modelIndex.isValid()) {
         return false;
     }
@@ -129,8 +136,7 @@ bool Logic::setData(const QModelIndex &modelIndex, const QVariant &value, int ro
     return true;
 }
 
-Qt::ItemFlags Logic::flags(const QModelIndex &modelIndex) const
-{
+Qt::ItemFlags Logic::flags(const QModelIndex &modelIndex) const {
     if (!modelIndex.isValid()) {
         return Qt::ItemIsEnabled;
     }

@@ -20,8 +20,8 @@ public:
 
     enum Types {
         Pawn,
-        Bishop,
         Knight,
+        Bishop,
         Rook,
         Queen,
         King
