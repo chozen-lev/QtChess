@@ -21,20 +21,20 @@ ApplicationWindow {
       property int squareSize: width / logic.boardSize;
       property var images: [
         [
-          {'imgPath' : "/images/white_pawn.svg"},
-          {'imgPath' : "/images/white_knight.svg"},
-          {'imgPath' : "/images/white_bishop.svg"},
-          {'imgPath' : "/images/white_rook.svg"},
-          {'imgPath' : "/images/white_queen.svg"},
-          {'imgPath' : "/images/white_king.svg"},
-        ],
-        [
           {'imgPath' : "/images/black_pawn.svg"},
           {'imgPath' : "/images/black_knight.svg"},
           {'imgPath' : "/images/black_bishop.svg"},
           {'imgPath' : "/images/black_rook.svg"},
           {'imgPath' : "/images/black_queen.svg"},
           {'imgPath' : "/images/black_king.svg"},
+        ],
+        [
+          {'imgPath' : "/images/white_pawn.svg"},
+          {'imgPath' : "/images/white_knight.svg"},
+          {'imgPath' : "/images/white_bishop.svg"},
+          {'imgPath' : "/images/white_rook.svg"},
+          {'imgPath' : "/images/white_queen.svg"},
+          {'imgPath' : "/images/white_king.svg"},
         ]
       ]
 
@@ -62,6 +62,8 @@ ApplicationWindow {
             drag.minimumY: 0
             drag.maximumX: gameBoard.width - gameBoard.squareSize
             drag.maximumY: gameBoard.height - gameBoard.squareSize
+
+            enabled: ingameMenu.visible ? (logic.getTeam === team ? false : true) : false
 
             property int startX: 0
             property int startY: 0
@@ -107,10 +109,11 @@ ApplicationWindow {
           Button {
             id: startButton
             Layout.fillWidth: true
-            text: "New game"
+            text: qsTr("New game")
 
             onClicked: {
               mainMenu.visible = false
+              laodControllers.visible = false
               ingameMenu.visible = true
 
               logic.clear();
@@ -120,16 +123,21 @@ ApplicationWindow {
           Button {
             id: loadButton
             Layout.fillWidth: true
-            text: "Load"
+            text: qsTr("Load")
 
             onClicked: {
               loadDialog.open();
             }
           }
           Button {
+            id: prefButton
+            Layout.fillWidth: true
+            text: qsTr("Settings")
+          }
+          Button {
             id: quitButton
             Layout.fillWidth: true
-            text: "Exit"
+            text: qsTr("Exit")
 
             onClicked: {
               Qt.quit();
@@ -147,12 +155,14 @@ ApplicationWindow {
           Button {
             id: prevButton
             anchors.left: parent.left
-            text: "Prev"
+            text: qsTr("Prev")
+            enabled: logic.getCurrMove > 0
           }
           Button {
             id: nextButton
             anchors.right: parent.right
-            text: "Next"
+            text: qsTr("Next")
+            enabled: logic.getCurrMove < logic.getMovementsNum
           }
         }
       }
@@ -163,39 +173,48 @@ ApplicationWindow {
       anchors.left: gameBoard.right
       anchors.right: parent.right
       anchors.top: parent.top
-      anchors.leftMargin: 10
-      anchors.rightMargin: 10
-      anchors.topMargin: 10
+      anchors.bottom: parent.bottom
+      anchors.margins: 10
       visible: false
-
-      Button {
-        id: saveButton
-        text: "Save"
+      ColumnLayout {
         anchors.left: parent.left
         anchors.right: parent.right
+        anchors.top: parent.top
 
-        onClicked: {
-          saveDialog.open();
+        Button {
+          id: saveButton
+          text: qsTr("Save")
+          Layout.fillWidth: true
+
+          onClicked: {
+            saveDialog.open();
+          }
+        }
+        Button {
+          id: stopButton
+          text: qsTr("Stop")
+          Layout.fillWidth: true
+
+          onClicked: {
+            logic.clear()
+
+            ingameMenu.visible = false
+            mainMenu.visible = true
+          }
         }
       }
+
       Button {
-        id: stopButton
-        text: "Stop"
-        anchors.left: parent.left
-        anchors.right: parent.right
-
-        onClicked: {
-          logic.clear()
-
-          ingameMenu.visible = false
-          mainMenu.visible = true
-        }
+        id: undoButton
+        Layout.fillWidth: true
+        anchors.bottom: parent.bottom
+        text: qsTr("Undo")
       }
     }
 
     FileDialog {
       id: loadDialog
-      title: "Please choose a file"
+      title: qsTr("Please choose a file")
       nameFilters: [ "Text files (*.txt)", "All files (*)" ]
       folder: shortcuts.documents
 
@@ -206,7 +225,7 @@ ApplicationWindow {
 
     FileDialog {
       id: saveDialog
-      title: "Save file"
+      title: qsTr("Save file")
       selectExisting: false
       folder: shortcuts.documents
     }

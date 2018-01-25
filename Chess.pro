@@ -1,9 +1,9 @@
 TEMPLATE = app
 
-CONFIG += c++17
+CONFIG += c++11
 CONFIG += CONSOLE
 
-QT += qml quick quickcontrols2 widgets
+QT += qml quick widgets
 
 SOURCES += src/main.cpp \
     src/logic.cpp
