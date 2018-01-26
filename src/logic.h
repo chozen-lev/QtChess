@@ -6,9 +6,9 @@ class Logic: public QAbstractListModel
 {
     Q_OBJECT
 public:
-
     enum GlobalConstants {
-        BOARD_SIZE = 8
+        BOARD_SIZE = 8,
+        FIGURES_NUM = 32
     };
 
     enum Roles {
@@ -28,9 +28,18 @@ public:
     };
 
     enum Teams {
-        White,
-        Black
+        Black,
+        White
     };
+
+    enum Statuses {
+        None,
+        Check,
+        Checkmate
+    };
+
+    const QList<QString> boardCoordX = { "a", "b", "c", "d", "e", "f", "g", "h" };
+    const QList<QString> boardCoordY = { "8", "7", "6", "5", "4", "3", "2", "1" };
     
 public:
     explicit Logic(QObject *parent = 0);

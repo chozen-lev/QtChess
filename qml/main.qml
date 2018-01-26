@@ -5,10 +5,8 @@ import QtQuick.Dialogs 1.2
 
 ApplicationWindow {
     title: qsTr("Chess")
-    minimumWidth: 800
-    minimumHeight: 600
-    maximumWidth: 800
-    maximumHeight: 600
+    minimumWidth: 640
+    minimumHeight: 480
     visible: true
 
     Item {
@@ -52,6 +50,7 @@ ApplicationWindow {
 
           x: gameBoard.squareSize * positionX
           y: gameBoard.squareSize * positionY
+          z: 0
 
           source: gameBoard.images[team][type].imgPath
 
@@ -71,6 +70,7 @@ ApplicationWindow {
             onPressed: {
               startX = parent.x;
               startY = parent.y;
+              parent.z = 1;
             }
 
             onReleased: {
@@ -83,6 +83,7 @@ ApplicationWindow {
                 positionX = fromX;
                 positionY = fromY;
               }
+              parent.z = 0
             }
           }
         }

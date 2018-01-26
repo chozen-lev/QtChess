@@ -2,9 +2,9 @@
 #include <QList>
 #include <QByteArray>
 #include <QHash>
+#include <QDebug>
 
-struct Figure
-{
+struct Figure {
     int type;
     int team;
     int x;
@@ -12,11 +12,7 @@ struct Figure
     bool firstmove;
 };
 
-struct Logic::Impl
-{
-    const QList<QString> boardCoordX = { "a", "b", "c", "d", "e", "f", "g", "h" };
-    const QList<QString> boardCoordY = { "8", "7", "6", "5", "4", "3", "2", "1" };
-
+struct Logic::Impl {
     QList<Figure> figures;
     QList<QString> movements;
 
@@ -25,10 +21,11 @@ struct Logic::Impl
     void initPieces();
     int findByPosition(int x, int y) const;
     bool isMoveValid(int index, int toX, int toY) const;
+    bool canAttack(int attacker, int victim) const;
+    int checkStatus(int team) const;
 };
 
-void Logic::Impl::initPieces()
-{
+void Logic::Impl::initPieces() {
     for (int team = 0; team < 2; team++) {
         for (int x = 0; x < 8; x++) {
             figures << Figure { Pawn, team, x, team * (BOARD_SIZE - 3) + 1, 0 };
@@ -46,7 +43,7 @@ void Logic::Impl::initPieces()
 
 int Logic::Impl::findByPosition(int x, int y) const {
     for (int i(0); i < figures.size(); ++i) {
-        if (figures[i].x != x || figures[i].y != y ) {
+        if (figures[i].x != x || figures[i].y != y) {
             continue;
         }
         return i;
@@ -58,15 +55,25 @@ bool Logic::Impl::isMoveValid(int index, int toX, int toY) const {
     int victim = findByPosition(toX, toY);
 
     if (victim >= 0 && figures[index].team == figures[victim].team) {
+        if (figures[index].type == King && figures[victim].type == Rook) {
+            if (!figures[index].firstmove && !figures[victim].firstmove) {
+                for (int i = figures[index].x; i != toX; (toX - figures[index].x) > 0 ? ++i : --i) {
+                    if (findByPosition(i, figures[index].y) >= 0 && i != figures[index].x) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
         return false;
     }
 
     switch (figures[index].type) {
     case Pawn: {
-        if ((toY - figures[index].y < 0) == (figures[index].team == White) || toY - figures[index].y == 0) {
+        if ((toY - figures[index].y > 0) == (figures[index].team == White) || toY - figures[index].y == 0) {
             return false;
         }
-        if (abs(toY - figures[index].y) > 2) {
+        if (abs(toY - figures[index].y) > 2 || abs(toX - figures[index].x) > 1) {
             return false;
         }
         if (abs(toY - figures[index].y) == 2) {
@@ -99,7 +106,7 @@ bool Logic::Impl::isMoveValid(int index, int toX, int toY) const {
         if(abs(toX - figures[index].x) != abs(toY - figures[index].y)) {
             return false;
         }
-        for (int i = 1; i < abs(toX - figures[index].x); i++) {
+        for (int i = 1; i < abs(toX - figures[index].x); ++i) {
             if (findByPosition(figures[index].x + (figures[index].x < toX ? i : -i), figures[index].y + (figures[index].y < toY ? i : -i)) >= 0) {
                 return false;
             }
@@ -110,12 +117,12 @@ bool Logic::Impl::isMoveValid(int index, int toX, int toY) const {
         if ((abs(toX - figures[index].x) > 0) == (abs(toY - figures[index].y) > 0)) {
             return false;
         }
-        for (int i = figures[index].x; i != toX; (toX - figures[index].x) > 0 ? i++ : i--) {
+        for (int i = figures[index].x; i != toX; (toX - figures[index].x) > 0 ? ++i : --i) {
             if (findByPosition(i, figures[index].y) >= 0 && i != figures[index].x) {
                 return false;
             }
         }
-        for (int i = figures[index].y; i != toY; (toY - figures[index].y) > 0 ? i++ : i--) {
+        for (int i = figures[index].y; i != toY; (toY - figures[index].y) > 0 ? ++i : --i) {
             if (findByPosition(figures[index].x, i) >= 0 && i != figures[index].y) {
                 return false;
             }
@@ -124,18 +131,18 @@ bool Logic::Impl::isMoveValid(int index, int toX, int toY) const {
     }
     case Queen: {
         if(abs(toX - figures[index].x) == abs(toY - figures[index].y)) {
-            for (int i = 1; i < abs(toX - figures[index].x); i++) {
+            for (int i = 1; i < abs(toX - figures[index].x); ++i) {
                 if (findByPosition(figures[index].x + (figures[index].x < toX ? i : -i), figures[index].y + (figures[index].y < toY ? i : -i)) >= 0) {
                     return false;
                 }
             }
         } else if ((abs(toX - figures[index].x) > 0) != (abs(toY - figures[index].y) > 0)) {
-            for (int i = figures[index].x; i != toX; (toX - figures[index].x) > 0 ? i++ : i--) {
+            for (int i = figures[index].x; i != toX; (toX - figures[index].x) > 0 ? ++i : --i) {
                 if (findByPosition(i, figures[index].y) >= 0 && i != figures[index].x) {
                     return false;
                 }
             }
-            for (int i = figures[index].y; i != toY; (toY - figures[index].y) > 0 ? i++ : i--) {
+            for (int i = figures[index].y; i != toY; (toY - figures[index].y) > 0 ? ++i : --i) {
                 if (findByPosition(figures[index].x, i) >= 0 && i != figures[index].y) {
                     return false;
                 }
@@ -148,10 +155,52 @@ bool Logic::Impl::isMoveValid(int index, int toX, int toY) const {
         if (abs(toY - figures[index].y) > 1 || abs(toX - figures[index].x) > 1) {
             return false;
         }
-        break;
+        return true;
     }
     }
     return true;
+}
+
+bool Logic::Impl::canAttack(int attacker, int victim) const
+{
+    if (attacker < 0 || attacker >= figures.size()) {
+        return false;
+    }
+    if (victim < 0 || attacker >= figures.size()) {
+        return false;
+    }
+    if (victim == attacker) {
+        return false;
+    }
+    return isMoveValid(attacker, figures[victim].x, figures[victim].y);
+}
+
+int Logic::Impl::checkStatus(int team) const
+{
+    int king = 0, result = None;
+    for (king = 0; king < figures.size(); king++) {
+        if (figures[king].type == King && figures[king].team == team) {
+            break;
+        }
+    }
+
+    // заплатка на время, пока не реализована проверка на "шах и мат"
+    ///////////////////////////////////
+    if (king == figures.size()) {
+        return None;
+    }
+    ///////////////////////////////////
+
+    for (int i = 0; i < figures.size(); ++i) {
+        if (figures[i].team != team && canAttack(i, king)) {
+            result = Check;
+            break;
+        }
+    }
+
+    // проверка на мат
+
+    return result;
 }
 
 Logic::Logic(QObject *parent) : QAbstractListModel(parent), impl(new Impl())
@@ -167,23 +216,20 @@ int Logic::boardSize() const {
     return BOARD_SIZE;
 }
 
-int Logic::getTeam() const
-{
+int Logic::getTeam() const {
     return impl->currMove % 2;
 }
 
-int Logic::getMovementsNum() const
-{
+int Logic::getMovementsNum() const {
     return impl->movements.size();
 }
 
-int Logic::getCurrMove() const
-{
+int Logic::getCurrMove() const {
     return impl->currMove;
 }
 
 void Logic::start() {
-    beginInsertRows(QModelIndex(), 0, 31);
+    beginInsertRows(QModelIndex(), 0, FIGURES_NUM - 1);
     impl->initPieces();
     endInsertRows();
 }
@@ -304,22 +350,55 @@ bool Logic::move(int fromX, int fromY, int toX, int toY) {
     }
 
     int victim = impl->findByPosition(toX, toY);
+    bool castling = false;
+    int fromX2, fromY2;
 
     if (victim >= 0) {
-        beginRemoveRows(QModelIndex(), victim, victim);
-        impl->figures.removeAt(victim);
-        endRemoveRows();
+        if (impl->figures[index].team != impl->figures[victim].team) {
+            beginRemoveRows(QModelIndex(), victim, victim);
+            impl->figures.removeAt(victim);
+            endRemoveRows();
 
-        if (victim < index) {
-            index--;
-        }
+            if (victim < index) {
+                index--;
+            }
+        } else castling = true;
     }
 
     impl->currMove++;
 
-    impl->figures[index].x = toX;
-    impl->figures[index].y = toY;
+    if (!castling) {
+        impl->figures[index].x = toX;
+        impl->figures[index].y = toY;
+    } else {
+        fromX2 = impl->figures[victim].x;
+        fromY2 = impl->figures[victim].y;
+
+        impl->figures[index].x += toX - fromX > 0 ? 2 : -2;
+        impl->figures[victim].x = impl->figures[index].x + (toX - fromX > 0 ? -1 : 1);
+    }
+
+    if (impl->checkStatus(impl->currMove % 2) != None) {
+        if (castling) impl->figures[victim].x = toX;
+
+        impl->figures[index].x = fromX;
+        impl->figures[index].y = fromY;
+        impl->currMove--;
+        return false;
+    }
+
     impl->figures[index].firstmove = true;
+    impl->movements << boardCoordX[fromX] + boardCoordY[fromY] + boardCoordX[impl->figures[index].x] + boardCoordY[impl->figures[index].y];
+
+    if (castling) {
+        impl->figures[victim].firstmove = true;
+        impl->movements.back().append("&" + boardCoordX[fromX2] + boardCoordY[fromY2] + boardCoordX[impl->figures[victim].x] + boardCoordY[impl->figures[victim].y]);
+
+        QModelIndex topLeft = createIndex(victim, 0);
+        QModelIndex bottomRight = createIndex(victim, 0);
+        emit dataChanged(topLeft, bottomRight, { PositionX, PositionY });
+    }
+
     QModelIndex topLeft = createIndex(index, 0);
     QModelIndex bottomRight = createIndex(index, 0);
     emit dataChanged(topLeft, bottomRight, { PositionX, PositionY });
