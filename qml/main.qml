@@ -210,6 +210,11 @@ ApplicationWindow {
         Layout.fillWidth: true
         anchors.bottom: parent.bottom
         text: qsTr("Undo")
+        enabled: logic.getMovementsNum > 0
+
+        onClicked: {
+          logic.undo()
+        }
       }
     }
 
@@ -229,5 +234,9 @@ ApplicationWindow {
       title: qsTr("Save file")
       selectExisting: false
       folder: shortcuts.documents
+
+      onAccepted: {
+        logic.save(saveDialog.fileUrl);
+      }
     }
 }

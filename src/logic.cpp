@@ -1,20 +1,25 @@
 #include "logic.h"
 #include <QList>
 #include <QByteArray>
-#include <QHash>
-#include <QDebug>
+#include <QFile>
+#include <QUrl>
+#include <QTextStream>
 
 struct Figure {
     int type;
     int team;
     int x;
     int y;
-    bool firstmove;
+    int movesNum;
 };
 
 struct Logic::Impl {
+    const QList<QString> boardCoordX = { "a", "b", "c", "d", "e", "f", "g", "h" };
+    const QList<QString> boardCoordY = { "8", "7", "6", "5", "4", "3", "2", "1" };
+
     QList<Figure> figures;
     QList<QString> movements;
+    QHash<int,Figure> captured;
 
     int currMove = 0;
 
@@ -22,6 +27,8 @@ struct Logic::Impl {
     int findByPosition(int x, int y) const;
     bool isMoveValid(int index, int toX, int toY) const;
     bool canAttack(int attacker, int victim) const;
+    bool move(int index, int toX, int toY);
+    bool capture(int &attacker, int victim);
     int checkStatus(int team) const;
 };
 
@@ -56,7 +63,7 @@ bool Logic::Impl::isMoveValid(int index, int toX, int toY) const {
 
     if (victim >= 0 && figures[index].team == figures[victim].team) {
         if (figures[index].type == King && figures[victim].type == Rook) {
-            if (!figures[index].firstmove && !figures[victim].firstmove) {
+            if (figures[index].movesNum == 0 && figures[victim].movesNum == 0) {
                 for (int i = figures[index].x; i != toX; (toX - figures[index].x) > 0 ? ++i : --i) {
                     if (findByPosition(i, figures[index].y) >= 0 && i != figures[index].x) {
                         return false;
@@ -77,7 +84,7 @@ bool Logic::Impl::isMoveValid(int index, int toX, int toY) const {
             return false;
         }
         if (abs(toY - figures[index].y) == 2) {
-            if (figures[index].firstmove || abs(toX - figures[index].x) > 0) {
+            if (figures[index].movesNum > 0 || abs(toX - figures[index].x) > 0) {
                 return false;
             }
             if (victim != -1 || findByPosition((figures[index].x + toX) / 2, (figures[index].y + toY) / 2) != -1) {
@@ -173,6 +180,43 @@ bool Logic::Impl::canAttack(int attacker, int victim) const
         return false;
     }
     return isMoveValid(attacker, figures[victim].x, figures[victim].y);
+}
+
+bool Logic::Impl::move(int index, int toX, int toY)
+{
+    if (toX < 0 || toX >= BOARD_SIZE || toY < 0 || toY >= BOARD_SIZE) {
+        return false;
+    }
+
+    movements << boardCoordX[figures[index].x] + boardCoordY[figures[index].y] + boardCoordX[toX] + boardCoordY[toY];
+
+    figures[index].x = toX;
+    figures[index].y = toY;
+    figures[index].movesNum++;
+
+    return true;
+}
+
+bool Logic::Impl::capture(int &attacker, int victim)
+{
+    if (attacker == victim) {
+        return false;
+    }
+    if (attacker < 0 || attacker >= figures.size()) {
+        return false;
+    }
+    if (victim < 0 || victim >= figures.size()) {
+        return false;
+    }
+
+    captured.insert(movements.size(), figures[victim]);
+    figures.removeAt(victim);
+
+    if (victim < attacker) {
+        attacker--;
+    }
+
+    return true;
 }
 
 int Logic::Impl::checkStatus(int team) const
@@ -319,91 +363,116 @@ void Logic::clear() {
     emit movementsNumChanged();
 }
 
+void Logic::undo()
+{
+    if (impl->movements.isEmpty()) {
+        return;
+    }
+
+    int index;
+    int fromX, fromY, toX, toY;
+
+    QString movement = impl->movements.takeLast();
+    impl->currMove--;
+
+    toX = impl->boardCoordX.indexOf(QString(movement[0])),
+    toY = impl->boardCoordY.indexOf(QString(movement[1])),
+    fromX = impl->boardCoordX.indexOf(QString(movement[2])),
+    fromY = impl->boardCoordY.indexOf(QString(movement[3]));
+    index = impl->findByPosition(fromX, fromY);
+
+    impl->figures[index].x = toX;
+    impl->figures[index].y = toY;
+    impl->figures[index].movesNum--;
+    QModelIndex topLeft = createIndex(index, 0);
+    QModelIndex bottomRight = createIndex(index, 0);
+    emit dataChanged(topLeft, bottomRight, { PositionX, PositionY });
+
+    if (impl->captured.contains(impl->currMove)) {
+        beginInsertRows(QModelIndex(), rowCount(QModelIndex()), rowCount(QModelIndex()));
+        impl->figures << impl->captured.take(impl->currMove);
+        endInsertRows();
+    } else if (movement.length() > 4 && movement[4] == '&') {
+        toX = impl->boardCoordX.indexOf(QString(movement[5])),
+        toY = impl->boardCoordY.indexOf(QString(movement[6])),
+        fromX = impl->boardCoordX.indexOf(QString(movement[7])),
+        fromY = impl->boardCoordY.indexOf(QString(movement[8]));
+        index = impl->findByPosition(fromX, fromY);
+
+        impl->figures[index].x = toX;
+        impl->figures[index].y = toY;
+        impl->figures[index].movesNum--;
+        QModelIndex topLeft = createIndex(index, 0);
+        QModelIndex bottomRight = createIndex(index, 0);
+        emit dataChanged(topLeft, bottomRight, { PositionX, PositionY });
+    }
+
+    emit teamChanged();
+    emit movementsNumChanged();
+}
+
 bool Logic::move(int fromX, int fromY, int toX, int toY) {
     int index = impl->findByPosition(fromX, fromY);
-
     if (index < 0) return false;
-
-    if (toX < 0 || toX >= BOARD_SIZE || toY < 0 || toY >= BOARD_SIZE) {
-        return false;
-    }
 
     if (!impl->isMoveValid(index, toX, toY)) {
         return false;
     }
 
-    if (!impl->figures[index].firstmove) {
-        switch (impl->figures[index].type) {
-        case Pawn: {
-            impl->figures[index].firstmove = true;
-            break;
-        }
-        case Rook: {
-            impl->figures[index].firstmove = true;
-            break;
-        }
-        case King: {
-            impl->figures[index].firstmove = true;
-            break;
-        }
-        }
-    }
-
-    int victim = impl->findByPosition(toX, toY);
+    int index2 = impl->findByPosition(toX, toY);
     bool castling = false;
-    int fromX2, fromY2;
 
-    if (victim >= 0) {
-        if (impl->figures[index].team != impl->figures[victim].team) {
-            beginRemoveRows(QModelIndex(), victim, victim);
-            impl->figures.removeAt(victim);
+    if (index2 >= 0) {
+        if (impl->figures[index].team != impl->figures[index2].team) {
+            beginRemoveRows(QModelIndex(), index2, index2);
+            impl->capture(index, index2);
             endRemoveRows();
+        } else if (impl->figures[index].type == King && impl->figures[index2].type == Rook) {
+            castling = true;
 
-            if (victim < index) {
-                index--;
-            }
-        } else castling = true;
+            // ход на две клетки в сторону ладьи
+            toX = impl->figures[index].x + (toX - fromX > 0 ? 2 : -2);
+
+            // ладья переносится через короля и ставится на следующее за ним поле
+            impl->move(index2, toX + (toX - fromX > 0 ? -1 : 1), impl->figures[index2].y);
+            QModelIndex topLeft = createIndex(index2, 0);
+            QModelIndex bottomRight = createIndex(index2, 0);
+            emit dataChanged(topLeft, bottomRight, { PositionX, PositionY });
+        }
     }
 
-    impl->currMove++;
-
-    if (!castling) {
-        impl->figures[index].x = toX;
-        impl->figures[index].y = toY;
-    } else {
-        fromX2 = impl->figures[victim].x;
-        fromY2 = impl->figures[victim].y;
-
-        impl->figures[index].x += toX - fromX > 0 ? 2 : -2;
-        impl->figures[victim].x = impl->figures[index].x + (toX - fromX > 0 ? -1 : 1);
-    }
-
-    if (impl->checkStatus(impl->currMove % 2) != None) {
-        if (castling) impl->figures[victim].x = toX;
-
-        impl->figures[index].x = fromX;
-        impl->figures[index].y = fromY;
-        impl->currMove--;
+    if (!impl->move(index, toX, toY)) {
         return false;
     }
-
-    impl->figures[index].firstmove = true;
-    impl->movements << boardCoordX[fromX] + boardCoordY[fromY] + boardCoordX[impl->figures[index].x] + boardCoordY[impl->figures[index].y];
-
-    if (castling) {
-        impl->figures[victim].firstmove = true;
-        impl->movements.back().append("&" + boardCoordX[fromX2] + boardCoordY[fromY2] + boardCoordX[impl->figures[victim].x] + boardCoordY[impl->figures[victim].y]);
-
-        QModelIndex topLeft = createIndex(victim, 0);
-        QModelIndex bottomRight = createIndex(victim, 0);
-        emit dataChanged(topLeft, bottomRight, { PositionX, PositionY });
-    }
-
     QModelIndex topLeft = createIndex(index, 0);
     QModelIndex bottomRight = createIndex(index, 0);
     emit dataChanged(topLeft, bottomRight, { PositionX, PositionY });
+
+    if (castling) {
+        QString movement = impl->movements.takeLast();
+        impl->movements.back().insert(0, movement + "&");
+    }
+
+    impl->currMove++;
     emit teamChanged();
     emit movementsNumChanged();
+
+    return true;
+}
+
+bool Logic::save(QString path)
+{
+    path = QUrl(path).toLocalFile();
+
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        return false;
+    }
+    QTextStream fstream(&file);
+    for (int i = 0; i < impl->movements.size(); ++i) {
+        fstream << impl->movements.at(i) << "\n";
+    }
+    file.close();
 
     return true;
 }

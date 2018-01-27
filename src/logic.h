@@ -37,9 +37,6 @@ public:
         Check,
         Checkmate
     };
-
-    const QList<QString> boardCoordX = { "a", "b", "c", "d", "e", "f", "g", "h" };
-    const QList<QString> boardCoordY = { "8", "7", "6", "5", "4", "3", "2", "1" };
     
 public:
     explicit Logic(QObject *parent = 0);
@@ -59,7 +56,9 @@ public:
 
     Q_INVOKABLE void start();
     Q_INVOKABLE void clear();
+    Q_INVOKABLE void undo();
     Q_INVOKABLE bool move(int fromX, int fromY, int toX, int toY);
+    Q_INVOKABLE bool save(QString path);
 
 protected:
     int rowCount(const QModelIndex &parent) const override;
