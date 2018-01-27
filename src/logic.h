@@ -59,6 +59,9 @@ public:
     Q_INVOKABLE void undo();
     Q_INVOKABLE bool move(int fromX, int fromY, int toX, int toY);
     Q_INVOKABLE bool save(QString path);
+    Q_INVOKABLE bool load(QString path);
+    Q_INVOKABLE bool prev();
+    Q_INVOKABLE bool next();
 
 protected:
     int rowCount(const QModelIndex &parent) const override;

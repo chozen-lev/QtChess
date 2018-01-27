@@ -5,6 +5,8 @@
 #include <QUrl>
 #include <QTextStream>
 
+#include <QDebug>
+
 struct Figure {
     int type;
     int team;
@@ -19,7 +21,7 @@ struct Logic::Impl {
 
     QList<Figure> figures;
     QList<QString> movements;
-    QHash<int,Figure> captured;
+    QHash<int, Figure> captured;
 
     int currMove = 0;
 
@@ -209,7 +211,7 @@ bool Logic::Impl::capture(int &attacker, int victim)
         return false;
     }
 
-    captured.insert(movements.size(), figures[victim]);
+    captured.insert(currMove, figures[victim]);
     figures.removeAt(victim);
 
     if (victim < attacker) {
@@ -358,6 +360,7 @@ void Logic::clear() {
 
     impl->currMove = 0;
     impl->movements.clear();
+    impl->captured.clear();
 
     emit currMoveChanged();
     emit movementsNumChanged();
@@ -434,7 +437,9 @@ bool Logic::move(int fromX, int fromY, int toX, int toY) {
             toX = impl->figures[index].x + (toX - fromX > 0 ? 2 : -2);
 
             // ладья переносится через короля и ставится на следующее за ним поле
-            impl->move(index2, toX + (toX - fromX > 0 ? -1 : 1), impl->figures[index2].y);
+            if (!impl->move(index2, toX + (toX - fromX > 0 ? -1 : 1), impl->figures[index2].y)) {
+                return false;
+            }
             QModelIndex topLeft = createIndex(index2, 0);
             QModelIndex bottomRight = createIndex(index2, 0);
             emit dataChanged(topLeft, bottomRight, { PositionX, PositionY });
@@ -473,6 +478,166 @@ bool Logic::save(QString path)
         fstream << impl->movements.at(i) << "\n";
     }
     file.close();
+
+    return true;
+}
+
+bool Logic::load(QString path)
+{
+    path = QUrl(path).toLocalFile();
+
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return false;
+    }
+
+    clear();
+
+    Impl impl2;
+    int index, index2 = -1, fromX, fromY, toX, toY;
+
+    impl2.initPieces();
+
+    QTextStream stream(&file);
+    while (!stream.atEnd())
+    {
+        QString movement = stream.readLine();
+        impl->movements << movement;
+
+        fromX = impl2.boardCoordX.indexOf(QString(movement[0])),
+        fromY = impl2.boardCoordY.indexOf(QString(movement[1])),
+        toX = impl2.boardCoordX.indexOf(QString(movement[2])),
+        toY = impl2.boardCoordY.indexOf(QString(movement[3]));
+        index = impl2.findByPosition(fromX, fromY);
+
+        if (index < 0) {
+            return false;
+        }
+        if (!impl2.isMoveValid(index, toX, toY) && movement.size() == 4) {
+            return false;
+        }
+
+        index2 = impl2.findByPosition(toX, toY);
+
+        if (index2 >= 0) {
+            if (impl2.figures[index].team == impl2.figures[index2].team) {
+                return false;
+            }
+            impl2.capture(index, index2);
+        } else if (movement.size() > 4 && movement.size() == 9 && movement[4] == '&') {
+            index2 = impl2.findByPosition(impl2.boardCoordX.indexOf(QString(movement[5])), impl2.boardCoordY.indexOf(QString(movement[6])));
+            if (index2 < 0) {
+                return false;
+            }
+            if (!impl2.move(index2, impl2.boardCoordX.indexOf(QString(movement[7])), impl2.boardCoordY.indexOf(QString(movement[8])))) {
+                return false;
+            }
+        }
+
+        if (!impl2.move(index, toX, toY)) {
+            return false;
+        }
+    }
+    file.close();
+
+    start();
+    emit teamChanged();
+    emit movementsNumChanged();
+
+    return true;
+}
+
+bool Logic::prev()
+{
+    if (impl->movements.isEmpty()) {
+        return false;
+    }
+
+    impl->currMove--;
+    emit currMoveChanged();
+
+    int toX = impl->boardCoordX.indexOf(QString(impl->movements[impl->currMove][0])),
+        toY = impl->boardCoordY.indexOf(QString(impl->movements[impl->currMove][1])),
+        fromX = impl->boardCoordX.indexOf(QString(impl->movements[impl->currMove][2])),
+        fromY = impl->boardCoordY.indexOf(QString(impl->movements[impl->currMove][3])),
+        index = impl->findByPosition(fromX, fromY);
+
+    impl->figures[index].x = toX;
+    impl->figures[index].y = toY;
+    impl->figures[index].movesNum--;
+    QModelIndex topLeft = createIndex(index, 0);
+    QModelIndex bottomRight = createIndex(index, 0);
+    emit dataChanged(topLeft, bottomRight, { PositionX, PositionY });
+
+    if (impl->captured.contains(impl->currMove)) {
+        beginInsertRows(QModelIndex(), rowCount(QModelIndex()), rowCount(QModelIndex()));
+        impl->figures << impl->captured[impl->currMove];
+        endInsertRows();
+        impl->captured.remove(impl->currMove);
+    } else if (impl->movements.length() > 4 && impl->movements[impl->currMove][4] == '&') {
+        toX = impl->boardCoordX.indexOf(QString(impl->movements[impl->currMove][5])),
+        toY = impl->boardCoordY.indexOf(QString(impl->movements[impl->currMove][6])),
+        fromX = impl->boardCoordX.indexOf(QString(impl->movements[impl->currMove][7])),
+        fromY = impl->boardCoordY.indexOf(QString(impl->movements[impl->currMove][8]));
+        index = impl->findByPosition(fromX, fromY);
+
+        impl->figures[index].x = toX;
+        impl->figures[index].y = toY;
+        impl->figures[index].movesNum--;
+        QModelIndex topLeft = createIndex(index, 0);
+        QModelIndex bottomRight = createIndex(index, 0);
+        emit dataChanged(topLeft, bottomRight, { PositionX, PositionY });
+    }
+
+    emit teamChanged();
+    emit movementsNumChanged();
+
+    return true;
+}
+
+bool Logic::next()
+{
+    if (impl->currMove >= impl->movements.size() + 1) {
+        return false;
+    }
+
+    int fromX = impl->boardCoordX.indexOf(QString(impl->movements[impl->currMove][0])),
+        fromY = impl->boardCoordY.indexOf(QString(impl->movements[impl->currMove][1])),
+        toX = impl->boardCoordX.indexOf(QString(impl->movements[impl->currMove][2])),
+        toY = impl->boardCoordY.indexOf(QString(impl->movements[impl->currMove][3])),
+        index = impl->findByPosition(fromX, fromY),
+        index2 = impl->findByPosition(toX, toY);
+
+    impl->figures[index].x = toX;
+    impl->figures[index].y = toY;
+    impl->figures[index].movesNum++;
+    QModelIndex topLeft = createIndex(index, 0);
+    QModelIndex bottomRight = createIndex(index, 0);
+    emit dataChanged(topLeft, bottomRight, { PositionX, PositionY });
+
+    if (index2 >= 0) {
+        beginRemoveRows(QModelIndex(), index2, index2);
+        impl->capture(index, index2);
+        endRemoveRows();
+    } else if (impl->movements.size() > 4 && impl->movements[impl->currMove][4] == '&') {
+        fromX = impl->boardCoordX.indexOf(QString(impl->movements[impl->currMove][5])),
+        fromY = impl->boardCoordY.indexOf(QString(impl->movements[impl->currMove][6])),
+        toX = impl->boardCoordX.indexOf(QString(impl->movements[impl->currMove][7])),
+        toY = impl->boardCoordY.indexOf(QString(impl->movements[impl->currMove][8]));
+        index2 = impl->findByPosition(fromX, fromY);
+
+        impl->figures[index2].x = toX;
+        impl->figures[index2].y = toY;
+        impl->figures[index2].movesNum++;
+        QModelIndex topLeft = createIndex(index2, 0);
+        QModelIndex bottomRight = createIndex(index2, 0);
+        emit dataChanged(topLeft, bottomRight, { PositionX, PositionY });
+    }
+
+    impl->currMove++;
+    emit currMoveChanged();
+    emit teamChanged();
+    emit movementsNumChanged();
 
     return true;
 }

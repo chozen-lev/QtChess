@@ -5,7 +5,7 @@ import QtQuick.Dialogs 1.2
 
 ApplicationWindow {
     title: qsTr("Chess")
-    minimumWidth: 640
+    minimumWidth: 670
     minimumHeight: 480
     visible: true
 
@@ -100,7 +100,7 @@ ApplicationWindow {
 
       ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 10
+        anchors.margins: 5
 
         ColumnLayout {
           id: mainMenu
@@ -156,14 +156,30 @@ ApplicationWindow {
           Button {
             id: prevButton
             anchors.left: parent.left
-            text: qsTr("Prev")
+            text: qsTr("<")
             enabled: logic.getCurrMove > 0
+            Layout.maximumWidth: parent.width / 5
+
+            onClicked: {
+              logic.prev();
+            }
+          }
+          Button {
+            id: playButton
+            anchors.left: prevButton.right
+            anchors.right: nextButton.left
+            text: qsTr("Play")
           }
           Button {
             id: nextButton
             anchors.right: parent.right
-            text: qsTr("Next")
+            text: qsTr(">")
             enabled: logic.getCurrMove < logic.getMovementsNum
+            Layout.maximumWidth: parent.width / 5
+
+            onClicked: {
+              logic.next();
+            }
           }
         }
       }
@@ -175,7 +191,7 @@ ApplicationWindow {
       anchors.right: parent.right
       anchors.top: parent.top
       anchors.bottom: parent.bottom
-      anchors.margins: 10
+      anchors.margins: 5
       visible: false
       ColumnLayout {
         anchors.left: parent.left
@@ -225,7 +241,9 @@ ApplicationWindow {
       folder: shortcuts.documents
 
       onAccepted: {
-        laodControllers.visible = true
+        if (logic.load(loadDialog.fileUrls[0])) {
+          laodControllers.visible = true;
+        }
       }
     }
 
