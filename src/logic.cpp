@@ -5,8 +5,6 @@
 #include <QUrl>
 #include <QTextStream>
 
-#include <QDebug>
-
 struct Figure {
     int type;
     int team;
@@ -467,6 +465,10 @@ bool Logic::move(int fromX, int fromY, int toX, int toY) {
 
 bool Logic::save(QString path)
 {
+    if (impl->movements.size() <= 0) {
+        return false;
+    }
+
     path = QUrl(path).toLocalFile();
 
     QFile file(path);
@@ -637,6 +639,21 @@ bool Logic::next()
     impl->currMove++;
     emit currMoveChanged();
     emit teamChanged();
+    emit movementsNumChanged();
+
+    return true;
+}
+
+bool Logic::play()
+{
+    int size = impl->movements.size();
+    if (size <= 0) {
+        return false;
+    }
+
+    for (int i = impl->currMove; i < size; ++i) {
+        impl->movements.removeLast();
+    }
     emit movementsNumChanged();
 
     return true;

@@ -62,6 +62,7 @@ public:
     Q_INVOKABLE bool load(QString path);
     Q_INVOKABLE bool prev();
     Q_INVOKABLE bool next();
+    Q_INVOKABLE bool play();
 
 protected:
     int rowCount(const QModelIndex &parent) const override;

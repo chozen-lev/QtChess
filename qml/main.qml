@@ -114,7 +114,7 @@ ApplicationWindow {
 
             onClicked: {
               mainMenu.visible = false
-              laodControllers.visible = false
+              loadControllers.visible = false
               ingameMenu.visible = true
 
               logic.clear();
@@ -147,7 +147,7 @@ ApplicationWindow {
         }
 
         RowLayout {
-          id: laodControllers
+          id: loadControllers
           anchors.left: parent.left
           anchors.right: parent.right
           anchors.bottom: parent.bottom
@@ -169,6 +169,13 @@ ApplicationWindow {
             anchors.left: prevButton.right
             anchors.right: nextButton.left
             text: qsTr("Play")
+
+            onClicked: {
+              logic.play();
+              loadControllers.visible = false;
+              mainMenu.visible = false;
+              ingameMenu.visible = true;
+            }
           }
           Button {
             id: nextButton
@@ -202,6 +209,7 @@ ApplicationWindow {
           id: saveButton
           text: qsTr("Save")
           Layout.fillWidth: true
+          enabled: logic.getMovementsNum > 0
 
           onClicked: {
             saveDialog.open();
@@ -242,7 +250,7 @@ ApplicationWindow {
 
       onAccepted: {
         if (logic.load(loadDialog.fileUrls[0])) {
-          laodControllers.visible = true;
+          loadControllers.visible = true;
         }
       }
     }
